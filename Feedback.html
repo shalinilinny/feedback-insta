@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            text-align: center;
+        }
+        .icon-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px;
+        }
+        .icon {
+            width: 60px;
+            height: 80px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .icon:hover {
+            transform: scale(1.1);
+        }
+        .count {
+            font-size: 14px;
+            margin-top: 1px;
+        }
+        .message {
+            margin-top: 1px;
+            font-size: 15px;
+            color: #cc8b60;
+        }
+        .glitter {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            animation: glitter-animation 1s forwards;
+            pointer-events: none; /* Prevent glitter from interfering with clicks */
+        }
+        @keyframes glitter-animation {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+        .comment-box {
+            margin-top: 20px;
+        }
+        .comment-input {
+            width: 250px;
+            height: 40px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        .submit-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .submit-button:hover {
+            background-color: #45a049;
+        }
+        .comments-list {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .comment-item { /* Style for individual comments */
+            margin-bottom: 5px;
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9; /* Light background for comments */
+            word-wrap: break-word; /* Prevents long words from overflowing */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="icon-container">
+        <div>
+            <img class="icon" id="happy" src="https://imgur.com/kWG8nZD.png" onclick="handleClick('happy', event)" alt="Happy Face">
+            <div class="count" id="happyCount">0</div>
+        </div>
+        <div>
+            <img class="icon" id="kiss" src="https://imgur.com/Rql6uBQ.png" onclick="handleClick('kiss', event)" alt="Kiss Face">
+            <div class="count" id="kissCount">0</div>
+        </div>
+        <div>
+            <img class="icon" id="sad" src="https://imgur.com/zdpxJYW.png" onclick="handleClick('sad', event)" alt="Sad Face">
+            <div class="count" id="sadCount">0</div>
+        </div>
+        <div>
+            <img class="icon" id="heart" src="https://imgur.com/vI8PSiO.png" onclick="handleClick('heart', event)" alt="Heart">
+            <div class="count" id="heartCount">0</div>
+        </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="comment-box">
+        <textarea id="commentInput" class="comment-input" placeholder="Leave your comment here..."></textarea><br>
+        <button class="submit-button" onclick="submitComment()">Submit Comment</button>
+    </div>
+
+    <div class="comments-list" id="commentsList"></div>
+
+    <script>
+        let counts = { happy: 0, kiss: 0, sad: 0, heart: 0 };
+        let comments = [];
+
+        function loadData() {
+            window.parent.postMessage('REQUEST_DATA', '*');
+        }
+
+        function handleClick(icon, event) {
+            counts[icon]++;
+            updateDisplay();
+
+            const message = icon === 'sad' ? 'Will try better next time.' : 'Thank you for the feedback!';
+            document.getElementById('message').innerText = message;
+
+            window.parent.postMessage({ type: 'SAVE_COUNTS', data: counts }, '*');
+            createGlitter(event.clientX, event.clientY);
+        }
+
+        function createGlitter(x, y) {
+            const glitter = document.createElement('div');
+            glitter.className = 'glitter';
+            glitter.style.left = `${x - 5}px`;
+            glitter.style.top = `${y - 5}px`;
+            document.body.appendChild(glitter);
+            setTimeout(() => {
+                glitter.remove();
+            }, 1000);
+        }
+
+        function submitComment() {
+            const commentInput = document.getElementById('commentInput');
+            const commentText = commentInput.value.trim();
+
+            if (commentText && !commentText.includes('http')) {
+                comments.push(commentText);
+                updateDisplay();
+
+                window.parent.postMessage({ type: 'SAVE_COMMENTS', data: comments }, '*');
+
+                commentInput.value = '';
+            } else {
+                alert('Please enter a valid comment without links.');
+            }
+        }
+
+        function updateDisplay() {
+            for (const key in counts) {
+                const countElement = document.getElementById(key + 'Count');
+                if (countElement) {
+                    countElement.innerText = counts[key];
+                }
+            }
+
+            const commentsList = document.getElementById('commentsList');
+            if (commentsList) {
+                commentsList.innerHTML = '';
+                comments.forEach(comment => {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'comment-item';
+                    commentElement.textContent = comment;
+                    commentsList.appendChild(commentElement);
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadData);
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'DATA_RESPONSE') {
+                counts = event.data.counts;
+                comments = event.data.comments;
+                updateDisplay();
+            }
+        });
+    </script>
+
+</body>
+</html>
