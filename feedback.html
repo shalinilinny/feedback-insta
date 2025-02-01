@@ -123,8 +123,28 @@
         let comments = [];
 
         function loadData() {
-            window.parent.postMessage('REQUEST_DATA', '*');
+    // Request data from the parent, but with a timeout:
+    let dataReceived = false; // Flag to track if data was received
+
+    const timeoutId = setTimeout(() => {
+        if (!dataReceived) {
+            console.warn("Timeout: No data received from parent. Using default values.");
+            updateDisplay(); // Update with default values if timeout occurs
         }
+    }, 2000); // 2-second timeout (adjust as needed)
+
+    window.parent.postMessage('REQUEST_DATA', '*');
+
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'DATA_RESPONSE') {
+            clearTimeout(timeoutId); // Clear the timeout if data is received
+            dataReceived = true;
+            counts = event.data.counts;
+            comments = event.data.comments;
+            updateDisplay();
+        }
+    });
+}
 
         function handleClick(icon, event) {
             counts[icon]++;
